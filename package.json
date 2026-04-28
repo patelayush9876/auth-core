@@ -1,0 +1,123 @@
+{
+  "name": "node-auth-core",
+  "version": "0.1.0",
+  "description": "Self-hosted, framework-agnostic authentication module for Node.js",
+  "license": "MIT",
+  "author": "",
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./adapters/memory": {
+      "import": "./dist/esm/adapters/memory/index.js",
+      "require": "./dist/cjs/adapters/memory/index.js",
+      "types": "./dist/types/adapters/memory/index.d.ts"
+    },
+    "./adapters/sql": {
+      "import": "./dist/esm/adapters/sql/index.js",
+      "require": "./dist/cjs/adapters/sql/index.js",
+      "types": "./dist/types/adapters/sql/index.d.ts"
+    },
+    "./adapters/mongodb": {
+      "import": "./dist/esm/adapters/mongodb/index.js",
+      "require": "./dist/cjs/adapters/mongodb/index.js",
+      "types": "./dist/types/adapters/mongodb/index.d.ts"
+    },
+    "./adapters/redis": {
+      "import": "./dist/esm/adapters/redis/index.js",
+      "require": "./dist/cjs/adapters/redis/index.js",
+      "types": "./dist/types/adapters/redis/index.d.ts"
+    },
+    "./strategies/local": {
+      "import": "./dist/esm/strategies/local/index.js",
+      "require": "./dist/cjs/strategies/local/index.js",
+      "types": "./dist/types/strategies/local/index.d.ts"
+    },
+    "./strategies/oauth": {
+      "import": "./dist/esm/strategies/oauth/index.js",
+      "require": "./dist/cjs/strategies/oauth/index.js",
+      "types": "./dist/types/strategies/oauth/index.d.ts"
+    },
+    "./strategies/passwordless": {
+      "import": "./dist/esm/strategies/passwordless/index.js",
+      "require": "./dist/cjs/strategies/passwordless/index.js",
+      "types": "./dist/types/strategies/passwordless/index.d.ts"
+    },
+    "./strategies/webauthn": {
+      "import": "./dist/esm/strategies/webauthn/index.js",
+      "require": "./dist/cjs/strategies/webauthn/index.js",
+      "types": "./dist/types/strategies/webauthn/index.d.ts"
+    },
+    "./strategies/mfa": {
+      "import": "./dist/esm/strategies/mfa/index.js",
+      "require": "./dist/cjs/strategies/mfa/index.js",
+      "types": "./dist/types/strategies/mfa/index.d.ts"
+    },
+    "./middleware/express": {
+      "import": "./dist/esm/middleware/express/index.js",
+      "require": "./dist/cjs/middleware/express/index.js",
+      "types": "./dist/types/middleware/express/index.d.ts"
+    },
+    "./middleware/fastify": {
+      "import": "./dist/esm/middleware/fastify/index.js",
+      "require": "./dist/cjs/middleware/fastify/index.js",
+      "types": "./dist/types/middleware/fastify/index.d.ts"
+    },
+    "./middleware/hono": {
+      "import": "./dist/esm/middleware/hono/index.js",
+      "require": "./dist/cjs/middleware/hono/index.js",
+      "types": "./dist/types/middleware/hono/index.d.ts"
+    }
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && tsc -p tsconfig.types.json",
+    "test": "vitest --run",
+    
+    "test:watch": "vitest",
+    "test:coverage": "vitest --run --coverage",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "dependencies": {
+    "argon2": "^0.31.2",
+    "bcrypt": "^5.1.1",
+    "jose": "^5.2.4",
+    "otpauth": "^9.3.4",
+    "zxcvbn": "^4.4.2",
+    "@simplewebauthn/server": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "^20.11.5",
+    "@types/zxcvbn": "^4.4.4",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2",
+    "@vitest/coverage-v8": "^1.2.2"
+  },
+  "peerDependencies": {
+    "ioredis": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ioredis": {
+      "optional": true
+    }
+  }
+}
