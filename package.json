@@ -1,9 +1,9 @@
 {
   "name": "node-auth-core",
   "version": "0.1.0",
-  "description": "Self-hosted, framework-agnostic authentication module for Node.js",
+  "description": "A production-ready, self-hosted authentication library for Node.js featuring JWT, refresh tokens, sessions, OAuth 2.0, MFA, and passwordless login — fully framework-agnostic with zero external auth dependencies.",
   "license": "MIT",
-  "author": "",
+  "author": "ayush-patel",
   "engines": {
     "node": ">=18"
   },
