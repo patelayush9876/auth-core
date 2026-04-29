@@ -243,6 +243,13 @@ function mapSession(row: Record<string, unknown>): Session {
 }
 
 function mapToken(row: Record<string, unknown>): StoredToken {
+  const metadata =
+    row['metadata']
+      ? (typeof row['metadata'] === 'string'
+          ? (JSON.parse(row['metadata']) as Record<string, unknown>)
+          : (row['metadata'] as Record<string, unknown>))
+      : undefined;
+
   return {
     tokenHash: (row['token_hash'] ?? row['tokenHash']) as string,
     userId: (row['user_id'] ?? row['userId']) as string,
@@ -250,10 +257,6 @@ function mapToken(row: Record<string, unknown>): StoredToken {
     expiresAt: new Date((row['expires_at'] ?? row['expiresAt']) as string | Date),
     consumed: Boolean(row['consumed']),
     createdAt: new Date((row['created_at'] ?? row['createdAt']) as string | Date),
-    metadata: row['metadata']
-      ? (typeof row['metadata'] === 'string'
-          ? JSON.parse(row['metadata']) as Record<string, unknown>
-          : row['metadata'] as Record<string, unknown>)
-      : undefined,
+    ...(metadata !== undefined ? { metadata } : {}),
   };
 }

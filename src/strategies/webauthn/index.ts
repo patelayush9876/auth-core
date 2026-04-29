@@ -14,9 +14,13 @@ import {
   type VerifyRegistrationResponseOpts,
   type GenerateAuthenticationOptionsOpts,
   type VerifyAuthenticationResponseOpts,
-  type RegistrationResponseJSON,
-  type AuthenticationResponseJSON,
 } from '@simplewebauthn/server';
+import type {
+  AuthenticationResponseJSON,
+  AuthenticatorDevice,
+  AuthenticatorTransportFuture,
+  RegistrationResponseJSON,
+} from '@simplewebauthn/types';
 import type { BaseUser, ResolvedAuthConfig, TokenPair, Session } from '../../types/index.js';
 import { Errors } from '../../errors.js';
 import { emitAudit } from '../../audit.js';
@@ -52,7 +56,7 @@ export async function getRegistrationOptions<TUser extends BaseUser>(
     attestationType: 'none',
     excludeCredentials: existingCredentials.map((c) => ({
       id: c.credentialId,
-      transports: c.transports as AuthenticatorTransport[] | undefined,
+      ...(c.transports ? { transports: c.transports as AuthenticatorTransportFuture[] } : {}),
     })),
     authenticatorSelection: {
       residentKey: 'preferred',
@@ -95,16 +99,19 @@ export async function verifyRegistration<TUser extends BaseUser>(
     throw Errors.webAuthnChallengeFailed();
   }
 
-  const { credential, credentialDeviceType, credentialBackedUp } = registrationInfo;
+  const { credentialID, credentialPublicKey, counter, credentialDeviceType, credentialBackedUp } =
+    registrationInfo;
 
   await config.adapters.credential.save({
     userId: user.id,
-    credentialId: credential.id,
-    publicKey: credential.publicKey,
-    counter: credential.counter,
+    credentialId: credentialID,
+    publicKey: credentialPublicKey,
+    counter,
     deviceType: credentialDeviceType,
     backedUp: credentialBackedUp,
-    transports: input.response.response.transports,
+    ...(input.response.response.transports
+      ? { transports: input.response.response.transports as string[] }
+      : {}),
   });
 }
 
@@ -128,7 +135,7 @@ export async function getAuthenticationOptions<TUser extends BaseUser>(
   const allowCredentials = input.userId
     ? (await config.adapters.credential.findByUserId(input.userId)).map((c) => ({
         id: c.credentialId,
-        transports: c.transports as AuthenticatorTransport[] | undefined,
+        ...(c.transports ? { transports: c.transports as AuthenticatorTransportFuture[] } : {}),
       }))
     : [];
 
@@ -170,18 +177,22 @@ export async function verifyAuthentication<TUser extends BaseUser>(
 
   if (!credential) throw Errors.webAuthnCredentialNotFound();
 
+  const authenticator: AuthenticatorDevice = {
+    credentialID: credential.credentialId,
+    credentialPublicKey: credential.publicKey,
+    counter: credential.counter,
+    ...(credential.transports
+      ? { transports: credential.transports as AuthenticatorTransportFuture[] }
+      : {}),
+  };
+
   const opts: VerifyAuthenticationResponseOpts = {
     response: input.response,
     expectedChallenge: input.expectedChallenge,
     expectedOrigin: input.origin,
     expectedRPID: input.rpId,
     requireUserVerification: true,
-    credential: {
-      id: credential.credentialId,
-      publicKey: credential.publicKey,
-      counter: credential.counter,
-      transports: credential.transports as AuthenticatorTransport[] | undefined,
-    },
+    authenticator,
   };
 
   const { verified, authenticationInfo } = await verifyAuthenticationResponse(opts);

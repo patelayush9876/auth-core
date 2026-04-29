@@ -40,7 +40,8 @@ export function createAuthenticateMiddleware<TUser extends BaseUser>(
   config: ResolvedAuthConfig<TUser>,
 ): RequestHandler {
   return async (req: Request, _res: Response, next: NextFunction) => {
-    req.auth = (await authenticate(toAuthRequest(req), config)) as AuthContext | undefined ?? undefined;
+    const ctx = await authenticate(toAuthRequest(req), config);
+    if (ctx) req.auth = ctx as AuthContext;
     next();
   };
 }

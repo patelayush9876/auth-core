@@ -59,6 +59,7 @@ export function honoProtect<TUser extends BaseUser>(
       const ctx = await protect(toAuthRequest(c), config);
       c.set('auth', ctx);
       await next();
+      return;
     } catch (err) {
       if (options.redirectTo) {
         return c.redirect(options.redirectTo, 302);
@@ -84,6 +85,7 @@ export function honoRequireRole<TUser extends BaseUser>(
     try {
       requireRole(auth, ...roles);
       await next();
+      return;
     } catch {
       return c.json({ code: 'FORBIDDEN', message: `Requires role: ${roles.join(' or ')}`, statusCode: 403 }, 403);
     }
@@ -102,6 +104,7 @@ export function honoRequireMFA<TUser extends BaseUser>(
     try {
       requireMFA(auth);
       await next();
+      return;
     } catch (err) {
       if (err instanceof AuthError) {
         return c.json(err.toJSON(), err.statusCode as Parameters<typeof c.json>[1]);

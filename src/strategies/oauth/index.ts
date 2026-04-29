@@ -36,7 +36,9 @@ export const PROVIDERS: Record<string, Omit<OAuthProviderConfig, 'clientId' | 'c
       provider: 'google',
       providerUserId: String(raw['sub']),
       email: raw['email'] as string | null,
-      emailVerified: raw['email_verified'] as boolean | undefined,
+      ...(typeof raw['email_verified'] === 'boolean'
+        ? { emailVerified: raw['email_verified'] }
+        : {}),
       displayName: raw['name'] as string | null,
       avatarUrl: raw['picture'] as string | null,
       raw,
@@ -66,7 +68,7 @@ export const PROVIDERS: Record<string, Omit<OAuthProviderConfig, 'clientId' | 'c
       provider: 'discord',
       providerUserId: String(raw['id']),
       email: raw['email'] as string | null,
-      emailVerified: raw['verified'] as boolean | undefined,
+      ...(typeof raw['verified'] === 'boolean' ? { emailVerified: raw['verified'] } : {}),
       displayName: raw['username'] as string | null,
       avatarUrl: raw['avatar']
         ? `https://cdn.discordapp.com/avatars/${raw['id']}/${raw['avatar']}.png`

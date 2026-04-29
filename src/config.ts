@@ -49,11 +49,13 @@ export function resolveConfig<TUser extends BaseUser>(
   const accessToken: AccessTokenConfig = {
     algorithm,
     expiresIn: config.accessToken?.expiresIn ?? '15m',
-    issuer: config.accessToken?.issuer,
-    audience: config.accessToken?.audience,
+    ...(config.accessToken?.issuer !== undefined ? { issuer: config.accessToken.issuer } : {}),
+    ...(config.accessToken?.audience !== undefined ? { audience: config.accessToken.audience } : {}),
     // For HS256, privateKey holds the secret; for RS256/ES256 it's a PEM key
-    privateKey: algorithm === 'HS256' ? secret : config.accessToken?.privateKey,
-    publicKey: config.accessToken?.publicKey,
+    ...(algorithm === 'HS256'
+      ? { privateKey: secret }
+      : (config.accessToken?.privateKey !== undefined ? { privateKey: config.accessToken.privateKey } : {})),
+    ...(config.accessToken?.publicKey !== undefined ? { publicKey: config.accessToken.publicKey } : {}),
   };
 
   // ── Refresh token ──────────────────────────────────────────────────────────
@@ -71,8 +73,8 @@ export function resolveConfig<TUser extends BaseUser>(
       secure: config.session?.cookie?.secure ?? !development,
       sameSite: config.session?.cookie?.sameSite ?? 'Strict',
       path: config.session?.cookie?.path ?? '/',
-      domain: config.session?.cookie?.domain,
-      maxAge: config.session?.cookie?.maxAge,
+      ...(config.session?.cookie?.domain !== undefined ? { domain: config.session.cookie.domain } : {}),
+      ...(config.session?.cookie?.maxAge !== undefined ? { maxAge: config.session.cookie.maxAge } : {}),
     },
     absoluteTimeout: config.session?.absoluteTimeout ?? '30d',
     idleTimeout: config.session?.idleTimeout ?? '7d',

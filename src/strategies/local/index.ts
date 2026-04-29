@@ -31,6 +31,8 @@ export interface RegisterResult<TUser extends BaseUser> {
   emailVerificationToken: string;
 }
 
+type PasswordUser = BaseUser & { passwordHash: string };
+
 /**
  * Register a new user with email + password.
  *
@@ -43,7 +45,7 @@ export interface RegisterResult<TUser extends BaseUser> {
  * 6. Issue email verification token
  * 7. Emit audit event
  */
-export async function register<TUser extends BaseUser>(
+export async function register<TUser extends PasswordUser>(
   input: RegisterInput,
   config: ResolvedAuthConfig<TUser>,
   meta: { ip?: string | null; userAgent?: string | null } = {},
@@ -72,20 +74,21 @@ export async function register<TUser extends BaseUser>(
     throw Errors.passwordTooWeak(score);
   }
 
-  const passwordHash = await hashPassword(input.password, config.password);
+  const { password, ...extra } = input;
+  const passwordHash = await hashPassword(password, config.password);
 
   // Build user data — spread extra fields, override security-sensitive ones
   const userData = {
-    ...input,
+    ...extra,
     email,
     passwordHash,
     emailVerified: false,
-    roles: (input['roles'] as string[] | undefined) ?? [],
+    roles: Array.isArray(extra['roles']) ? (extra['roles'] as string[]) : [],
     mfaEnabled: false,
     mfaEnforcement: config.mfa.enforcement,
     lockedUntil: null,
     failedLoginAttempts: 0,
-  } as Omit<TUser, 'id' | 'createdAt' | 'updatedAt'>;
+  } as unknown as Omit<TUser, 'id' | 'createdAt' | 'updatedAt'>;
 
   const user = await adapters.user.create(userData);
 
@@ -138,7 +141,7 @@ export interface LoginResult<TUser extends BaseUser> {
  * - Always runs the same code path for unknown email vs wrong password
  *   to prevent user enumeration via timing
  */
-export async function login<TUser extends BaseUser>(
+export async function login<TUser extends PasswordUser>(
   input: LoginInput,
   config: ResolvedAuthConfig<TUser>,
   meta: { ip?: string | null; userAgent?: string | null } = {},
@@ -163,7 +166,7 @@ export async function login<TUser extends BaseUser>(
   const dummyHash =
     '$argon2id$v=19$m=65536,t=3,p=4$dummysaltdummysalt$dummyhashvaluedummyhashvaluedummyhashvalue';
 
-  const passwordHash = (user as (TUser & { passwordHash?: string }) | null)?.passwordHash ?? dummyHash;
+  const passwordHash = user ? user.passwordHash : dummyHash;
 
   const passwordValid = await verifyPassword(input.password, passwordHash, config.password);
 
@@ -224,14 +227,16 @@ export async function login<TUser extends BaseUser>(
     await adapters.user.update(user.id, {
       failedLoginAttempts: 0,
       lockedUntil: null,
-    } as Partial<TUser>);
+    } as unknown as Partial<Omit<TUser, 'id' | 'createdAt'>>);
   }
 
   // Rehash if cost factors changed
-  const userWithHash = user as TUser & { passwordHash?: string };
-  if (userWithHash.passwordHash && await needsRehash(userWithHash.passwordHash, config.password)) {
+  if (await needsRehash(user.passwordHash, config.password)) {
     const newHash = await hashPassword(input.password, config.password);
-    await adapters.user.update(user.id, { passwordHash: newHash } as Partial<TUser>);
+    await adapters.user.update(
+      user.id,
+      { passwordHash: newHash } as unknown as Partial<Omit<TUser, 'id' | 'createdAt'>>,
+    );
   }
 
   const mfaRequired =
@@ -264,7 +269,7 @@ export interface VerifyEmailInput {
 /**
  * Verify a user's email address using the token sent during registration.
  */
-export async function verifyEmail<TUser extends BaseUser>(
+export async function verifyEmail<TUser extends PasswordUser>(
   input: VerifyEmailInput,
   config: ResolvedAuthConfig<TUser>,
 ): Promise<TUser> {
@@ -275,9 +280,10 @@ export async function verifyEmail<TUser extends BaseUser>(
   if (!stored) throw Errors.tokenInvalid();
   if (stored.expiresAt < new Date()) throw Errors.tokenExpired();
 
-  const user = await adapters.user.update(stored.userId, {
-    emailVerified: true,
-  } as Partial<TUser>);
+  const user = await adapters.user.update(
+    stored.userId,
+    { emailVerified: true } as unknown as Partial<Omit<TUser, 'id' | 'createdAt'>>,
+  );
 
   return user;
 }
@@ -295,7 +301,7 @@ export interface ForgotPasswordResult {
  * Issue a password reset token.
  * Always returns success even if the email doesn't exist — prevents user enumeration.
  */
-export async function forgotPassword<TUser extends BaseUser>(
+export async function forgotPassword<TUser extends PasswordUser>(
   input: ForgotPasswordInput,
   config: ResolvedAuthConfig<TUser>,
   meta: { ip?: string | null } = {},
@@ -336,7 +342,7 @@ export interface ResetPasswordInput {
  * Reset a user's password using a valid reset token.
  * Invalidates all existing sessions on success.
  */
-export async function resetPassword<TUser extends BaseUser>(
+export async function resetPassword<TUser extends PasswordUser>(
   input: ResetPasswordInput,
   config: ResolvedAuthConfig<TUser>,
   meta: { ip?: string | null; userAgent?: string | null } = {},
@@ -354,7 +360,10 @@ export async function resetPassword<TUser extends BaseUser>(
   }
 
   const newHash = await hashPassword(input.newPassword, config.password);
-  await adapters.user.update(stored.userId, { passwordHash: newHash } as Partial<TUser>);
+  await adapters.user.update(
+    stored.userId,
+    { passwordHash: newHash } as unknown as Partial<Omit<TUser, 'id' | 'createdAt'>>,
+  );
 
   // Revoke all sessions — force re-login
   await adapters.session.deleteAllForUser(stored.userId);

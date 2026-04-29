@@ -20,12 +20,20 @@ declare module 'fastify' {
 }
 
 function toAuthRequest(req: FastifyRequest) {
+  const userAgentHeader = req.headers['user-agent'];
+  const userAgent =
+    typeof userAgentHeader === 'string'
+      ? userAgentHeader
+      : Array.isArray(userAgentHeader)
+        ? userAgentHeader[0] ?? null
+        : null;
+
   return {
     headers: req.headers as Record<string, string | string[] | undefined>,
     cookies: (req.cookies ?? {}) as Record<string, string | undefined>,
     body: (req.body ?? {}) as Record<string, unknown>,
     ip: req.ip ?? null,
-    userAgent: req.headers['user-agent'] ?? null,
+    userAgent,
   };
 }
 
@@ -40,7 +48,8 @@ export function createAuthenticateHook<TUser extends BaseUser>(
   config: ResolvedAuthConfig<TUser>,
 ) {
   return async (req: FastifyRequest): Promise<void> => {
-    req.auth = (await authenticate(toAuthRequest(req), config)) as AuthContext | undefined ?? undefined;
+    const ctx = await authenticate(toAuthRequest(req), config);
+    if (ctx) req.auth = ctx as AuthContext;
   };
 }
 
