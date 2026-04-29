@@ -32,7 +32,8 @@ export async function hashPassword(
   config: PasswordConfig,
 ): Promise<string> {
   if (config.algorithm === 'argon2id') {
-    const argon2 = await import('argon2');
+    // argon2 is CommonJS; dynamic import exposes it under `default`
+    const { default: argon2 } = await import('argon2');
     return argon2.hash(password, {
       type: argon2.argon2id,
       memoryCost: config.argon2.memoryCost,
@@ -61,7 +62,7 @@ export async function verifyPassword(
 ): Promise<boolean> {
   try {
     if (config.algorithm === 'argon2id') {
-      const argon2 = await import('argon2');
+      const { default: argon2 } = await import('argon2');
       return await argon2.verify(hash, password);
     }
 
@@ -82,7 +83,7 @@ export async function needsRehash(
   config: PasswordConfig,
 ): Promise<boolean> {
   if (config.algorithm !== 'argon2id') return false;
-  const argon2 = await import('argon2');
+  const { default: argon2 } = await import('argon2');
   return argon2.needsRehash(hash, {
     memoryCost: config.argon2.memoryCost,
     timeCost: config.argon2.timeCost,
