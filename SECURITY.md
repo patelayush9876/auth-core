@@ -10,7 +10,7 @@
 
 **Please do not report security vulnerabilities via GitHub Issues.**
 
-To report a security issue, email **security@your-domain.com** with:
+To report a security issue, email **patelayush7007@gmail,com** with:
 
 - A description of the vulnerability
 - Steps to reproduce
